@@ -84,6 +84,26 @@ class myDevice {
 
          this.port.pipe(this.parser);
     }
+
+    ledOn = function(){
+        let self = this;
+        let cmd = Buffer.from("!LED,1/r", 'ascii');
+        return this.queue.add(async () => {
+            await new Promise(function (resolve, reject) {
+                ack_call(self, resolve, reject, cmd);
+            });
+        });
+    }
+
+    ledOff = function(){
+        let self = this;
+        let cmd = Buffer.from("!LED,0/r", 'ascii');
+        return this.queue.add(async () => {
+            await new Promise(function (resolve, reject) {
+                ack_call(self, resolve, reject, cmd);
+            });
+        });
+    }
 }
 
 module.exports = myDevice;
