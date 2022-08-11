@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "p-queue": "6.6.2",
+    "serialport": "^10.4.0"
+  }
+}
