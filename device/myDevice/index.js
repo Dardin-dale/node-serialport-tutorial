@@ -3,7 +3,6 @@ const { default: PQueue } = require('p-queue');
 const { Serialport } = require('serialport');
 const { ReadlineParser } require('@serialport/parser-readline');
 
-
 /**
  * Calculates an IBM CRC16 checksum.
  *
@@ -86,3 +85,5 @@ class myDevice {
          this.port.pipe(this.parser);
     }
 }
+
+module.exports = myDevice;
