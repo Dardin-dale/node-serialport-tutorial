@@ -71,6 +71,15 @@ async function ack_call(self, resolve, reject, cmd) {
     }
 }
 
+//challenge number 2
+async function multi_receive(self, resolve, reject, cmd) {
+    try{
+
+    } catch (err) {
+        reject(err)
+    }
+}
+
 class myDevice {
     constructor(id) {
          this.path = id;
@@ -85,25 +94,31 @@ class myDevice {
          this.port.pipe(this.parser);
     }
 
-    ledOn = function(){
+    ledOn() {
         let self = this;
         let cmd = Buffer.from("!LED,1/r", 'ascii');
-        return this.queue.add(async () => {
-            await new Promise(function (resolve, reject) {
+        return this.queue.add(
+            new Promise((resolve, reject) => {
+                ack_call(self, resolve, reject, cmd);
+            })
+        );
+    }
+
+    ledOff() {
+        let self = this;
+        let cmd = Buffer.from("!LED,0/r", 'ascii');
+        return this.queue.add(() => {
+            return new Promise(function (resolve, reject) {
                 ack_call(self, resolve, reject, cmd);
             });
         });
     }
 
-    ledOff = function(){
-        let self = this;
-        let cmd = Buffer.from("!LED,0/r", 'ascii');
-        return this.queue.add(async () => {
-            await new Promise(function (resolve, reject) {
-                ack_call(self, resolve, reject, cmd);
-            });
-        });
+    flashNTimes(n) {
+        //Challenge 1
     }
+
+
 }
 
 module.exports = myDevice;
