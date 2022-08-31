@@ -50,9 +50,7 @@ async function ack_call(self, resolve, reject, cmd) {
         }, 5000);
         
         self.port.write(cmd, function(err) {
-            if (err) {
-                reject(err);
-            }
+            if (err) reject(err);
             //messege sent successfully
         });
 
