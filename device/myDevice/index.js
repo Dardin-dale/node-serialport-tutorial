@@ -49,7 +49,12 @@ async function ack_call(self, resolve, reject, cmd) {
           reject("Device Timed out.")
         }, 5000);
         
-        await self.port.write(cmd);
+        self.port.write(cmd, function(err) {
+            if (err) {
+                reject(err);
+            }
+            //messege sent successfully
+        });
 
         self.parser.once('data', (data) => {
             let msg = data.toString('ascii');
