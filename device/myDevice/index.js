@@ -45,12 +45,17 @@ function validate_checksum(msg, checksum) {
 
 async function ack_call(self, resolve, reject, cmd) {
     try {
+        self.port.once('error', err => reject(err))
         let timer = setTimeout(() => {
+          self.port.removeAllListeners('error')
           reject("Device Timed out.")
         }, 5000);
         
         self.port.write(cmd, function(err) {
-            if (err) reject(err);
+            if (err) {
+              self.port.removeAllListeners('error')
+              reject(err);
+            } 
             //messege sent successfully
         });
 
@@ -60,13 +65,16 @@ async function ack_call(self, resolve, reject, cmd) {
             let info = msg[0].split(",");
             if (info[0] === "!NACK") {
                 clearTimeout(timer)
+                self.port.removeAllListeners('error')
                 reject("Command: " + cmd + " not properly Ack'd!")
             }
             if(!valid_checksum(msg[0], checksum)){
                 clearTimeout(timer)
+                self.port.removeAllListeners('error')
                 reject("Invalid checksum, Data corrupt");
             }
             clearTimeout(timer);
+            self.port.removeAllListeners('error')
             resolve(info[2]);
         })
     } catch (err) {
@@ -76,9 +84,11 @@ async function ack_call(self, resolve, reject, cmd) {
 
 multi_receive = async function (self, resolve, reject, command, expected) {
   try {
+    self.port.once('error', err => reject(err))
     let collected_data = [];
     let timer = setTimeout(() => {
       self.parser.removeAllListeners('data');
+      self.port.removeAllListeners('error')
       reject(
         "TrakPod timed out. CMD: " +
           command.toString().trim() +
@@ -88,7 +98,10 @@ multi_receive = async function (self, resolve, reject, command, expected) {
     }, 15000);
 
     let write_ok = await self.port.write(command, function(err) {
-        if(err) reject(err);
+        if (err) {
+          self.port.removeAllListeners('error')
+          reject(err);
+        } 
     });
 
     const promise = new Promise((resolve, reject) => {
@@ -98,6 +111,7 @@ multi_receive = async function (self, resolve, reject, command, expected) {
         let info = msg[0].split(",");
         if (!validate_checksum(msg[0], checksum)) {
           clearTimeout(timer);
+          self.port.removeAllListeners('error')
           reject(
             "Invalid Checksum returned from Pod. received: " +
               msg[0] +
@@ -108,8 +122,8 @@ multi_receive = async function (self, resolve, reject, command, expected) {
         if (info[0] === "!ACK") {
           //Good to do nothing...?
         } else if (info[0] === "!NACK") {
-          self.close();
           clearTimeout(timer);
+          self.port.removeAllListeners('error')
           reject(
             "Command: " +
               command.toString().trim() +
@@ -120,12 +134,14 @@ multi_receive = async function (self, resolve, reject, command, expected) {
         }
         if (msg[0] === self.idle) {
           clearTimeout(timer);
+          self.port.removeAllListeners('error')
           resolve(collected_data);
         }
       });
     });
     let res = await promise;
     self.parser.removeAllListeners("data");
+    self.port.removeAllListeners('error')
     resolve(res);
   } catch (err) {
     reject(err);
