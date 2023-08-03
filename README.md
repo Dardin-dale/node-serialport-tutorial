@@ -19,8 +19,6 @@ The JavaScript solution to device handling revolves around promise queueing sing
 
 Note: I'll be using CommonJS syntax, this effects the version of some of the dependencies used.
 
-[Source code here!](https://github.com/Dardin-dale/node-serialport-tutorial)
-
 ## Background:
  
 Advanced users skip to Method. Here I describe serialports in general and use cases for this tutorial.
@@ -92,7 +90,7 @@ Add the following dependencies to our NodeJS project:
 
 `yarn add serialport p-queue@6.6.2`
 
-Note: we are using v6.6.2 of p-queue for CommonJS, ESM will require transpilation which is beyond our scope. The Node Serialport library is a native library, historically transpiling native libraries was not well supported. It does appear that serialport v10.x.x supports ESM. You may need to add an exclusion to your rollup/webpack configuration if transpilation doesn't work.
+Note: we are using v6.x.x of p-queue for CommonJS, ESM will require transpilation which is beyond our scope. The Node Serialport library is a native library, historically transpiling native libraries was not well supported. It does appear that serialport v10.x.x+ supports ESM. You may need to add an exclusion to your rollup/webpack configuration if transpilation doesn't work.
 
 We'll import these packages as well as the parameters that we listed earlier.
 
