@@ -2,7 +2,7 @@ This tutorial for anyone who:
 
 - Wants to use JavaScript to make a rich UI for their embedded device
 - Wants to better understand serialport communication
-- Needs a daily dose of [Atwood's Law] (https://www.google.com/search?q=atwood%27s+law&oq=at&aqs=chrome.0.69i59j69i57j69i59j69i57l2j69i61l3.4980j0j1&sourceid=chrome&ie=UTF-8)
+- Needs a daily dose of [Atwood's Law](https://www.google.com/search?q=atwood%27s+law&oq=at&aqs=chrome.0.69i59j69i57j69i59j69i57l2j69i61l3.4980j0j1&sourceid=chrome&ie=UTF-8)
 
 or 
 - Anyone like myself who has inherited an embedded device project and needs a working understanding of how to build or maintain a project that uses serialport communication. 
