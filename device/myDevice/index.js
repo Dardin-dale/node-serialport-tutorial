@@ -183,7 +183,6 @@ class myDevice {
     }
 
 
-
 }
 
 module.exports = myDevice;
