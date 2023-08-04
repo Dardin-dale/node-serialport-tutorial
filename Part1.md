@@ -15,7 +15,7 @@ We will go through the setup and usage of the node [serialport library](https://
 
 The data structures above will lend a serialport RS-232 style device to behave in a 'Plug 'n Play' manner and hopefully avoid the common pitfalls that you can run into with serialport communication. By 'Plug 'n Play' I mean that a device can be connected/disconnected at will by the end user without causing errors.
 
-The JavaScript solution to device handling revolves around promise queueing singletons where other languages might use a threadpool. 
+The JavaScript solution to device handling revolves around promise queues and singletons where other languages might use a threadpool or Mutex. (see the Python and Rust examples)
 
 Note: I'll be using CommonJS syntax, this effects the version of some of the dependencies used.
 

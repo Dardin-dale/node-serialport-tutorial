@@ -1,0 +1,6 @@
+[workspace]
+
+members = [
+    "my_device",
+    "device_manager",
+]
