@@ -17,8 +17,6 @@ The data structures above will lend a serialport RS-232 style device to behave i
 
 The JavaScript solution to device handling revolves around promise queues and singletons where other languages might use a threadpool or Mutex. (see the Python and Rust examples)
 
-Note: I'll be using CommonJS syntax, this effects the version of some of the dependencies used.
-
 ## Background:
  
 Advanced users skip to Method. Here I describe serialports in general and use cases for this tutorial.
@@ -61,46 +59,42 @@ Non-Volatile parameters are settings/variables that are stored on your device th
 `parameters.js`
 
 ```javascript
-module.exports = {
-    'SerialNumber': 0,
-    'Param1': 1,
-    'Param2': 2,
+export default {
+    SerialNumber: 0,
+    Param1: 1,
+    Param2: 2,
     .
     .
     .
-    validateParam: (value, param) => { //bool
+    validateParam(value, param) { //bool
         switch (param) {
             case 'SerialNumber':
-               return typeof value === 'String'
-               break;
+                return typeof value === 'string';
             .
             .
             .
             default:
-              throw param + " Is an invalid parameter!"
+                throw new Error(param + " is an invalid parameter!");
         }
     }
-
-}
+};
 ```
 
 Next we'll move on to index.js in /myDevice to instantiate the serialport and define our communication strategy.
 
 Add the following dependencies to our NodeJS project:
 
-`yarn add serialport p-queue@6.6.2`
+`npm install serialport p-queue`
 
-Note: we are using v6.x.x of p-queue for CommonJS, ESM will require transpilation which is beyond our scope. The Node Serialport library is a native library, historically transpiling native libraries was not well supported. It does appear that serialport v10.x.x+ supports ESM. You may need to add an exclusion to your rollup/webpack configuration if transpilation doesn't work.
+The `serialport` package bundles its parsers (including `ReadlineParser`) and a mock binding class (`SerialPortMock`) in the main module, so we don't need separate `@serialport/*` subpackages. The tutorial targets Node 22+ and uses ESM throughout.
 
-We'll import these packages as well as the parameters that we listed earlier.
+We'll import these packages into our device module.
 
 `index.js`
 
 ```javascript
-const Params = require('./parameters');
-const { default: PQueue } = require('p-queue');
-const { SerialPort } = require('serialport');
-const { ReadlineParser } = require('@serialport/parser-readline');
+import PQueue from 'p-queue';
+import { SerialPort, ReadlineParser } from 'serialport';
 ```
 
 What are each of these doing? Serialport is going to be the connection to our device and represent the transform stream that we read/write. The ReadlineParser defines how we will get and send information in our buffer i.e. how messages will get parsed from our device. 
