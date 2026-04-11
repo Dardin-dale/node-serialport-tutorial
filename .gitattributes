@@ -1,0 +1,3 @@
+# Normalize line endings on checkin; write LF to the working tree.
+# Fixes CRLF churn from mixing Windows/WSL/Linux editors on the same repo.
+* text=auto eol=lf
