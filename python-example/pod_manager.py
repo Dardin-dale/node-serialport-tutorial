@@ -123,11 +123,10 @@ class Device_Manager:
                     pods[port.device] = self.pods[port.device]
             
             for port in list(self.pods):
-                if not port in pods:
+                if not port in pods and isinstance(self.pods[port], MyDevice):
                     pod = self.pods.pop(port)
-                    if isinstance(pod, MyDevice):
-                        """ pod.port.close() """
-                        hasChanged = True
+                    # pod.port.close()
+                    hasChanged = True
 
             if len(pods) == 0 and "--No Pods Available--" not in self.pods:
                 pods["--No Pods Available--"] = dict(path="--No Pods Available--", sn="None")

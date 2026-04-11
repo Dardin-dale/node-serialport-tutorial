@@ -56,7 +56,7 @@ fn checksum_is_valid(msg: &str, checksum: String) -> bool {
 }
 
 impl SerialDevice for MyDevice {
-    type Device = TrakPod;
+    type Device = MyDevice;
     fn open(path: &str) -> Mutex<Self::Device> {
         let port = serialport::new(path, 115_200)
             .flow_control(FlowControl::None)
@@ -64,7 +64,7 @@ impl SerialDevice for MyDevice {
             .open()
             .expect("Unable to open port device");
 
-        Mutex::new(TrakPod {
+        Mutex::new(MyDevice {
             path: String::from(path),
             port,
         })

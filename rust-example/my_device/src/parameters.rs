@@ -37,8 +37,7 @@ impl Parameter {
                 re.is_match(value)
             },
             Parameter::LedDrive => {
-                let val = value.parse::<i32>().unwrap();
-                0 <= val && val <= 255
+                value.parse::<i32>().map_or(false, |v| (0..=255).contains(&v))
             },
         }
     }

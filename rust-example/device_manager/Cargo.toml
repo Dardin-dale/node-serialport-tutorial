@@ -8,4 +8,4 @@ edition = "2021"
 
 [dependencies]
 serialport = "4.2.0"
-trakpod = {path = "../trakpod"}
+my_device = { path = "../my_device" }
