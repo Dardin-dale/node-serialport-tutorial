@@ -1,4 +1,4 @@
-module.exports {
+module.exports = {
     SERIAL_NUMBER: 0,
     isValid: function(param, value) {
         switch(param){
@@ -8,7 +8,5 @@ module.exports {
                 //invalid parameter
                 return false;
         }
-        
-
     }
 }

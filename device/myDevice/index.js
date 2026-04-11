@@ -1,7 +1,7 @@
 const Params = require('./parameters');
 const { default: PQueue } = require('p-queue');
-const { Serialport } = require('serialport');
-const { ReadlineParser } require('@serialport/parser-readline');
+const { SerialPort } = require('serialport');
+const { ReadlineParser } = require('@serialport/parser-readline');
 
 /**
  * Calculates an IBM CRC16 checksum.
@@ -40,7 +40,7 @@ function generateChecksum(msg) {
 
 function validate_checksum(msg, checksum) {
     let msg_check = generateChecksum(msg);
-    return mst_check === checksum;
+    return msg_check === checksum;
 }
 
 async function ack_call(self, resolve, reject, cmd) {
@@ -60,7 +60,7 @@ async function ack_call(self, resolve, reject, cmd) {
         });
 
         self.parser.once('data', (data) => {
-            let msg = data.toString('ascii');
+            let msg = data.toString('ascii').split(";");
             let checksum = msg[1].trim();
             let info = msg[0].split(",");
             if (info[0] === "!NACK") {
@@ -68,7 +68,7 @@ async function ack_call(self, resolve, reject, cmd) {
                 self.port.removeAllListeners('error')
                 reject("Command: " + cmd + " not properly Ack'd!")
             }
-            if(!valid_checksum(msg[0], checksum)){
+            if(!validate_checksum(msg[0], checksum)){
                 clearTimeout(timer)
                 self.port.removeAllListeners('error')
                 reject("Invalid checksum, Data corrupt");

@@ -97,10 +97,10 @@ We'll import these packages as well as the parameters that we listed earlier.
 `index.js`
 
 ```javascript
-const Params = require('./parameters')
-const { default: PQueue } = require('p-queue')
-const { Serialport } = require('serialport')
-const { ReadlineParser } require('@serialport/parser-readline')
+const Params = require('./parameters');
+const { default: PQueue } = require('p-queue');
+const { SerialPort } = require('serialport');
+const { ReadlineParser } = require('@serialport/parser-readline');
 ```
 
 What are each of these doing? Serialport is going to be the connection to our device and represent the transform stream that we read/write. The ReadlineParser defines how we will get and send information in our buffer i.e. how messages will get parsed from our device. 
@@ -119,12 +119,12 @@ We want to open the port, pipe in the readline parser and instantiate our promis
 `index.js`
 
 ```javascript
-class myDevice () {
+class myDevice {
     constructor(id) {
          this.path = id;
          this.parser = new ReadlineParser({delimiter: '\r', 
             encoding: 'ascii'});
-         this.port = new Serialport({path: id, baudRate: 115200}, 
+         this.port = new SerialPort({path: id, baudRate: 115200}, 
             function (err) {
                throw "Unable to initiate port: "+ err;
             });
@@ -199,10 +199,10 @@ async function ack_call(self, resolve, reject, cmd) {
             let msg = data.toString('ascii');
             let info = msg.split(",");
             if (info[0] === "!NACK") {
-                reject("Command: " + cmd + " not properly Ack'd!")
+                reject("Command: " + cmd + " not properly Ack'd!");
             }
             resolve(msg);
-        }
+        })
     } catch (err) {
        reject(err);
     }
@@ -217,7 +217,7 @@ Now we want to actually retrieve specific information and parse the data that co
 
 `index.js`
 ```javascript
-class myDevice() {
+class myDevice {
     .
     .
     .
@@ -243,20 +243,19 @@ async function ack_call(self, resolve, reject, cmd) {
              if(err) reject(err);
         });
         self.parser.on('data', (data) => {
-            let msg = data.toString('ascii');
-            //lets grab the checksum now
+            let msg = data.toString('ascii').split(";");
             let checksum = msg[1].trim();
             let info = msg[0].split(",");
             if (info[0] === "!NACK") {
                 reject("Command: " + cmd + " not properly Ack'd!")
             }
             // validate our message
-            if(!valid_checksum(msg[0], checksum)){
+            if(!validate_checksum(msg[0], checksum)){
                 reject("Invalid checksum, Data corrupt");
             }
             // data from device: !ACK,CMD,VALUE
             resolve(info[2]);
-        }
+        })
     } catch (err) {
        reject(err);
     }
@@ -285,7 +284,7 @@ function generateChecksum(msg) {
 
 function validate_checksum(msg, checksum) {
     let msg_check = generateChecksum(msg);
-    return mst_check === checksum;
+    return msg_check === checksum;
 }
 ```
 
@@ -297,27 +296,27 @@ async function ack_call(self, resolve, reject, cmd) {
     try {
         //create our timeout
         let timer = setTimeout(() => {
-          reject("Device Timed out.")
+          reject("Device Timed out.");
         }, 5000);
         self.port.write(cmd, function(err) {
              if(err) reject(err);
         });
         self.parser.on('data', (data) => {
-            let msg = data.toString('ascii');
+            let msg = data.toString('ascii').split(";");
             let checksum = msg[1].trim();
             let info = msg[0].split(",");
             if (info[0] === "!NACK") {
                 //clear timeout where we resolve/reject
-                clearTimeout(timer)
-                reject("Command: " + cmd + " not properly Ack'd!")
+                clearTimeout(timer);
+                reject("Command: " + cmd + " not properly Ack'd!");
             }
-            if(!valid_checksum(msg[0], checksum)){
-                clearTimeout(timer)
+            if(!validate_checksum(msg[0], checksum)){
+                clearTimeout(timer);
                 reject("Invalid checksum, Data corrupt");
             }
             clearTimeout(timer);
             resolve(info[2]);
-        }
+        })
     } catch (err) {
        reject(err);
     }
@@ -352,37 +351,37 @@ Our final `ack_call` function should look like this:
 ```javascript
 async function ack_call(self, resolve, reject, cmd) {
     try {
-        self.port.once('error', err => reject(err))
+        self.port.once('error', err => reject(err));
         let timer = setTimeout(() => {
-          self.port.removeAllListeners('error')
-          reject("Device Timed out.")
+          self.port.removeAllListeners('error');
+          reject("Device Timed out.");
         }, 5000);
         self.port.write(cmd, function(err) {
              if(err) {
-                 self.port.removeAllListeners('error')
-                 reject(err)
+                 self.port.removeAllListeners('error');
+                 reject(err);
              }
         });
         self.parser.once('data', (data) => {
-            let msg = data.toString('ascii')
-            let checksum = msg[1].trim()
-            let info = msg[0].split(",")
+            let msg = data.toString('ascii').split(";");
+            let checksum = msg[1].trim();
+            let info = msg[0].split(",");
             if (info[0] === "!NACK") {
-                clearTimeout(timer)
-                self.port.removeAllListeners('error')
-                reject("Command: " + cmd + " not properly Ack'd!")
+                clearTimeout(timer);
+                self.port.removeAllListeners('error');
+                reject("Command: " + cmd + " not properly Ack'd!");
             }
-            if(!valid_checksum(msg[0], checksum)){
-                clearTimeout(timer)
-                self.port.removeAllListeners('error')
+            if(!validate_checksum(msg[0], checksum)){
+                clearTimeout(timer);
+                self.port.removeAllListeners('error');
                 reject("Invalid checksum, Data corrupt");
             }
-            clearTimeout(timer)
-            self.port.removeAllListeners('error')
-            resolve(info[2])
-        }
+            clearTimeout(timer);
+            self.port.removeAllListeners('error');
+            resolve(info[2]);
+        })
     } catch (err) {
-       reject(err)
+       reject(err);
     }
 }
 ```
