@@ -1,19 +1,6 @@
-This tutorial for anyone who: 
+We will go through the setup and usage of the node [serialport library](https://serialport.io/) and ways to integrate your embedded device into a JavaScript application. This part covers defining the device's interface and retrieving data; Part 2 adds a DeviceManager for multiple devices, and Part 3 wires it into a polling loop.
 
-- Wants to use JavaScript to make a rich UI for their embedded device
-- Wants to better understand serialport communication
-- Needs a daily dose of [Atwood's Law](https://www.google.com/search?q=atwood%27s+law&oq=at&aqs=chrome.0.69i59j69i57j69i59j69i57l2j69i61l3.4980j0j1&sourceid=chrome&ie=UTF-8)
-
-or 
-- Anyone like myself who has inherited an embedded device project and needs a working understanding of how to build or maintain a project that uses serialport communication. 
-
-We will go through the setup and usage of the node [serialport library](https://serialport.io/) and ways to integrate your embedded device into a JavaScript application. Many of the same principles apply in other languages. I'll break this into several parts: 
-
-1. Defining your Device's Interface/retrieving data
-2. Connecting to multiple devices using a Device Manager Class
-3. Plug 'n Play with our Device Manager and setAsyncInterval
-
-The data structures above will lend a serialport RS-232 style device to behave in a 'Plug 'n Play' manner and hopefully avoid the common pitfalls that you can run into with serialport communication. By 'Plug 'n Play' I mean that a device can be connected/disconnected at will by the end user without causing errors.
+The data structures we'll build lend a serialport RS-232 style device to behave in a 'Plug 'n Play' manner and hopefully avoid the common pitfalls that you can run into with serialport communication. By 'Plug 'n Play' I mean that a device can be connected/disconnected at will by the end user without causing errors.
 
 The JavaScript solution to device handling revolves around promise queues and singletons where other languages might use a threadpool or Mutex. (see the Python and Rust examples)
 

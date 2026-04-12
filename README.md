@@ -8,6 +8,15 @@ This is really a tutorial about **serialport device patterns** — how to queue 
 
 If you came here for node-serialport specifically, start with [Part 1](Part1.md) and read forward. If you're polyglot-curious, see [`rust-example/`](rust-example/) and [`python-example/`](python-example/) — they implement the same patterns using their respective primitives (Rust's `Arc<Mutex<T>>` + polling thread, Python's `threading.Lock`).
 
+## Who is this for?
+
+This tutorial is for anyone who:
+
+- Wants to use JavaScript to make a rich UI for their embedded device
+- Wants to better understand serialport communication
+- Needs a daily dose of [Atwood's Law](https://www.google.com/search?q=atwood%27s+law)
+- Inherited an embedded device project and needs a working understanding of how to build or maintain a codebase that uses serialport communication
+
 ## The tutorial
 
 - **Part 1 — Defining a device interface** ([`Part1.md`](Part1.md))
