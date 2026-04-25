@@ -2,13 +2,13 @@ We will go through the setup and usage of the node [serialport library](https://
 
 The data structures we'll build lend a serialport RS-232 style device to behave in a 'Plug 'n Play' manner and hopefully avoid the common pitfalls that you can run into with serialport communication. By 'Plug 'n Play' I mean that a device can be connected/disconnected at will by the end user without causing errors.
 
-The JavaScript solution to device handling revolves around promise queues and singletons where other languages might use a threadpool or Mutex. (see the Python and Rust examples)
+The JavaScript solution to device handling revolves around promise queues and singletons[^1] where other languages might use a threadpool or Mutex. (see the Python and Rust examples)
 
 ## Background:
  
 Advanced users skip to Method. Here I describe serialports in general and use cases for this tutorial.
 
-![Serial Port Cable](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/37l0djc4dz5d1v09jzzl.jpg)
+![RS-232 9-pin serial port cable with thumbscrews](images/part1-rs232-cable.jpg)
 
 Serialports are often used to link external hardware devices. Many of these devices are now USB connected devices. However, many companies and developers choose to use RS-232 emulation (Think those old 9-pin connectors that screw onto your PC). RS-232 is backwards compatible and enables you to connect to the device without having to maintain a driver for your embedded device.
 
@@ -37,7 +37,7 @@ touch index.js parameters.js
 
 This should give you the following Tree Structure:
 
-![File Tree](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/4e9diqhwlt7nz2s6j7b9.png)
+![Project file tree with device/ folder containing DeviceManager.js and myDevice/ subfolder](images/part1-file-tree.png)
  
 We'll begin with parameters.js. This is where you should keep a record of all of the non-volatile parameters for your embedded device as well as a validator for the parameters that can be stored and saved to your device.
 
@@ -314,7 +314,7 @@ detected. 11 exit listeners added. Use emitter.setMaxListeners()
 to increase limit
 ```
 
-![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/xbg7dvyjqcezoclms263.png)
+![Node warning: MaxListenersExceededWarning with exit listeners added](images/part1-max-listeners-warning.png)
 
 Whoops! Let's see, we could follow it's suggestion and increase the number of listeners; we only have 20 parameters to grab. But, every time we make an `ack_call` we are making a new event listener. The serialport docs only mention an "on" method for the parser. So what do we do? Well, we know that the parser is a transform stream and an EventEmitter. What other methods can we use? This is where the [Node docs](https://nodejs.org/api/events.html) are our friend.
 
@@ -322,7 +322,7 @@ What we want is a single use listener for the `'data'` event. We read the Node d
 
 With our data listener's handled we no longer have any stumbling blocks. We run our tests and are able to handle 1000+ requests from our devices without fail. We then set up a test to hammer the devices over the weekend....
 
-![Image description](https://dev-to-uploads.s3.amazonaws.com/uploads/articles/z1h20rwbvcx6b97m0j34.png)
+![Terminal error from the write path after a long-running stress test](images/part1-stuck-port-error.png)
 
 Alas, one last error to contend with. Digging through the [serialport documentation](https://serialport.io/docs/api-stream) we find that not all errors (particularly write errors) are passed in our error callbacks but can also be passed through an `'error'` event for the stream. Adding an error event handler in this case is necessary. However, we do not expect this error to trigger so we must be careful to remove the listener before we resolve our promise.
 
@@ -374,3 +374,5 @@ As a bonus we can think about calls to our device that will return multiple valu
 Part 2 will cover creating a DeviceManager class to collect multiple devices and consuming the device interface that we've created.
 
 Happy Coding!
+
+[^1]: "Singleton" in this context is a smaller claim than it sounds. ES modules are already cached on import, so `export const manager = new DeviceManager(myDevice)` in a shared module gives you one instance for free — no `getInstance()` ceremony required. And the singleton is not what keeps commands safe; that job belongs to the per-device promise queue. See [Part 2 → Why not a singleton?](Part2.md#why-not-a-singleton) for the full breakdown.
