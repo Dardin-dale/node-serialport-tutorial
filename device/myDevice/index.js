@@ -1,3 +1,4 @@
+import Params from './parameters.js';
 import PQueue from 'p-queue';
 import { SerialPort, ReadlineParser } from 'serialport';
 
@@ -161,6 +162,12 @@ async function ack_call(self, resolve, reject, cmd) {
 }
 
 export class myDevice {
+    // USB descriptor for our device. DeviceManager reads these off the class
+    // to filter SerialPort.list() results. STMicroelectronics Virtual COM Port,
+    // common on STM32-based boards.
+    static VID = '0483';
+    static PID = '5740';
+
     /**
      * @param {string} id - OS path identifier (e.g. 'COM15' on Windows, '/dev/ttyS0' on Linux).
      * @param {typeof SerialPort} [SerialPortClass=SerialPort] - SerialPort class to use.
@@ -202,5 +209,33 @@ export class myDevice {
         return this.queue.add(() => new Promise((resolve, reject) => {
             ack_call(this, resolve, reject, cmd);
         }));
+    }
+
+    // Sets a parameter temporarily. The value lives in volatile memory
+    // until saveParams() commits it to non-volatile storage.
+    setParam(param, value) {
+        if (!Params.isValid(param, value)) {
+            return Promise.reject('Invalid value for parameter: ' + param);
+        }
+        const cmd = Buffer.from('!SET,' + param + ',' + value + '\r', 'ascii');
+        return this.queue.add(() => new Promise((resolve, reject) => {
+            ack_call(this, resolve, reject, cmd);
+        }));
+    }
+
+    // Commits all pending parameter changes to non-volatile memory.
+    saveParams() {
+        const cmd = Buffer.from('!CAL,1,1\r', 'ascii');
+        return this.queue.add(() => new Promise((resolve, reject) => {
+            ack_call(this, resolve, reject, cmd);
+        }));
+    }
+
+    // Convenience: set a parameter AND save in one call.
+    // Both commands go through the queue sequentially, so from the
+    // caller's perspective this is a single awaitable operation.
+    async updateParam(param, value) {
+        await this.setParam(param, value);
+        return this.saveParams();
     }
 }

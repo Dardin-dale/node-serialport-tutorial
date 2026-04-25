@@ -15,6 +15,8 @@
  *   !LED,0 / !LED,1          → acknowledged, toggles state.ledOn
  *   !GET,SERIAL_NUMBER       → returns state.serialNumber
  *   !GET,FW_VERSION          → returns state.firmwareVersion
+ *   !SET,PARAM,VALUE         → sets a parameter temporarily
+ *   !CAL,1,1                 → saves all params to NV (acknowledged)
  *   anything else            → !NACK
  *
  * Usage: pass `FakeFirmwarePort` as the SerialPortClass argument to
@@ -56,13 +58,44 @@ function buildResponse(body) {
 }
 
 // Device state — as if this were firmware running on a microcontroller.
-const state = {
-    serialNumber: 'DEMO_SN_00001',
-    firmwareVersion: '1.0.0',
-    ledOn: false,
-};
+// Per-path so a demo with several fake devices can give each its own
+// serial number, LED drive, etc.
+function makeDefaultState() {
+    return {
+        ledOn: false,
+        // Params that can be SET temporarily, then persisted with CAL,1,1
+        params: {
+            SERIAL_NUMBER: 'DEMO_SN_00001',
+            FW_VERSION: '1.0.0',
+            LED_DRIVE: '128',
+        },
+        saved: false,
+    };
+}
 
-function handleCommand(cmdStr) {
+const stateByPath = new Map();
+
+function getOrInitState(path) {
+    if (!stateByPath.has(path)) {
+        stateByPath.set(path, makeDefaultState());
+    }
+    return stateByPath.get(path);
+}
+
+/**
+ * Seed or override per-path device state before the demo opens the port.
+ * Useful for giving each fake device its own serial number / LED drive.
+ */
+export function setFakeDeviceState(path, overrides = {}) {
+    const base = makeDefaultState();
+    stateByPath.set(path, {
+        ...base,
+        ...overrides,
+        params: { ...base.params, ...(overrides.params || {}) },
+    });
+}
+
+function handleCommand(state, cmdStr) {
     if (!cmdStr.startsWith('!')) {
         return buildResponse('!NACK');
     }
@@ -79,13 +112,24 @@ function handleCommand(cmdStr) {
         }
         case 'GET': {
             const param = args[0];
-            if (param === 'SERIAL_NUMBER') {
-                return buildResponse(`!ACK,GET,${state.serialNumber}`);
-            }
-            if (param === 'FW_VERSION') {
-                return buildResponse(`!ACK,GET,${state.firmwareVersion}`);
+            if (param in state.params) {
+                return buildResponse(`!ACK,GET,${state.params[param]}`);
             }
             return buildResponse('!NACK');
+        }
+        case 'SET': {
+            const param = args[0];
+            const value = args[1];
+            if (param in state.params && value !== undefined) {
+                state.params[param] = value;
+                return buildResponse(`!ACK,SET,${value}`);
+            }
+            return buildResponse('!NACK');
+        }
+        case 'CAL': {
+            // CAL,1,1 = save all params to NV. We just acknowledge.
+            state.saved = true;
+            return buildResponse('!ACK,CAL,1');
         }
         default:
             return buildResponse('!NACK');
@@ -103,6 +147,7 @@ function handleCommand(cmdStr) {
  */
 export function attachFakeFirmware(port, options = {}) {
     const { latencyMs = 5 } = options;
+    const state = getOrInitState(port.path);
     const mock = port.port;
     const originalWrite = mock.write.bind(mock);
 
@@ -110,7 +155,7 @@ export function attachFakeFirmware(port, options = {}) {
         const result = await originalWrite(buffer);
         const cmdStr = buffer.toString('ascii').replace(/\r$/, '').trim();
         if (cmdStr.length > 0) {
-            const response = handleCommand(cmdStr);
+            const response = handleCommand(state, cmdStr);
             setTimeout(() => {
                 mock.emitData(Buffer.from(response, 'ascii'));
             }, latencyMs);
@@ -120,8 +165,9 @@ export function attachFakeFirmware(port, options = {}) {
 }
 
 // Exposed for tests / introspection if a demo wants to peek at device state.
-export function getFakeDeviceState() {
-    return { ...state };
+export function getFakeDeviceState(path) {
+    const s = stateByPath.get(path);
+    return s ? { ...s, params: { ...s.params } } : undefined;
 }
 
 /**
