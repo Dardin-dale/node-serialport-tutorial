@@ -37,6 +37,3 @@ cargo build      # full build
 3. `my_device/src/parameters.rs` — parameter enum + validator, same role as `parameters.js`.
 4. `device_manager/src/device_manager.rs` — the manager. Note the single `BTreeMap<String, Arc<Mutex<T::Device>>>` keyed on port path. No parallel index by serial number — one source of truth.
 
-## Known roughness
-
-The file dialog (`rfd`) and DFU-uploader pieces were extracted from a larger project and some dead code is still present (`enter_dfu_mode` on `MyDevice`, an unused `path` field). These produce dead-code warnings but don't block the build, and they're arguably instructive for readers who want to see where a real-world implementation extends beyond the tutorial scope.
