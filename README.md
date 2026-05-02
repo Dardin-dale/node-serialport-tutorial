@@ -8,6 +8,20 @@ This is really a tutorial about **serialport device patterns** — how to queue 
 
 If you came here for node-serialport specifically, start with [Part 1](Part1.md) and read forward. If you're polyglot-curious, see [`rust-example/`](rust-example/) and [`python-example/`](python-example/) — they implement the same patterns using their respective primitives (Rust's `Arc<Mutex<T>>` + polling thread, Python's `threading.Lock`).
 
+### What this tutorial assumes
+
+The patterns below are shaped by a particular kind of device. If yours is different, the pieces still apply, you just compose them differently.
+
+- **Query-response protocol.** The device only speaks when spoken to: you write a command, it writes a response, repeat. If your device pushes data on its own (alarms, telemetry streams, button events), the `ack_call` shape in Part 1 isn't the right primitive — you want a `'data'` listener feeding events into your app.
+- **ASCII framing with checksums.** Part 1's parser splits on `\r` and validates an IBM CRC-16. Different framing is a Part-1-only change; nothing downstream cares.
+- **Hold the port open between commands.** The `myDevice` class in Part 1 opens the port at construction and keeps it open for the object's lifetime. This is the right default for fast polling (sub-second to a few seconds), where the cost of opening the port would dominate. Other valid models exist:
+  - **Open-per-call** — open, send, close, every time. Slow but trivially correct, and on Windows it sometimes interacts better with flaky drivers.
+  - **Open-per-batch** — open once, run a sequence of related commands, close. Reasonable middle ground when you have natural transaction boundaries.
+
+  If you're polling every few minutes (a half-hourly sensor logger, for instance), open-per-call sidesteps almost everything Part 3 is solving and is probably what you want.
+
+If your situation matches, read forward. If it doesn't, take what you need.
+
 ## Who is this for?
 
 This tutorial is for anyone who:
