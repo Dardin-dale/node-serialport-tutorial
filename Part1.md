@@ -14,7 +14,7 @@ Serialports are often used to link external hardware devices. Many of these devi
 
 If you are a web developer, Serialports are most analogous to a TCP/IP socket connection, you utilize a transform stream to connect and write/read data in a buffer.
 
-A common issue with this RS-232 style communication is that your device does not emit a 'disconnection' event since RS-232 9-pin connectors were not designed to be fully Plug 'n Play. We'll cover this in more detail and mitigation strategies in a later tutorial.
+A common issue with RS-232 style communication is detecting when a device has gone away. Modern USB-to-serial bridges (FTDI, CP210x, CDC-ACM) do emit a `'close'` event with `err.disconnected = true` on physical unplug, so half the problem is solved for you. The case the OS can't help with is firmware that locks up while the cable is still plugged in: from the host's perspective the port handle is still valid, but commands stop being answered. We'll cover both modes and mitigation strategies in a later tutorial.
 
 ## Method
 
