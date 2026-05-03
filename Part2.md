@@ -215,7 +215,7 @@ export class DeviceManager {
         // Remove disconnected devices
         for (const path of this.devices.keys()) {
             if (!matchingPaths.has(path)) {
-                this.devices.get(path).port.close();
+                await this.devices.get(path).close();
                 this.devices.delete(path);
             }
         }
@@ -230,6 +230,8 @@ export class DeviceManager {
     }
 }
 ```
+
+The manager calls `device.close()` rather than reaching through to `device.port.close()`. The device owns its port; the manager only deals with the device. We also `await` the close before deleting from the map — serialport's close is asynchronous, and if a stale handle hangs around, the OS may not let the next `update()` re-open the same path.
 
 Call `manager.update()` periodically and it discovers new devices, cleans up old ones. The `Map` is our single source of truth — one key per port path, one value per device instance. If you need to look up a device by serial number or some other property, iterate the map — it's small and always consistent.
 
@@ -310,7 +312,7 @@ On Windows especially, an RS-232 emulated serial port can end up in a state wher
 async resetPort(path) {
     const device = this.devices.get(path);
     if (!device) return;
-    device.port.close();
+    await device.close();
     this.devices.delete(path);
     // The next update() cycle will re-enumerate and create a fresh instance.
 }
@@ -333,7 +335,7 @@ async shutdown() {
     await Promise.allSettled(
         [...this.devices.values()].map(async (device) => {
             await device.queue.onIdle();
-            device.port.close();
+            await device.close();
         })
     );
     this.devices.clear();
@@ -373,7 +375,7 @@ export class DeviceManager {
 
         for (const path of this.devices.keys()) {
             if (!matchingPaths.has(path)) {
-                this.devices.get(path).port.close();
+                await this.devices.get(path).close();
                 this.devices.delete(path);
             }
         }
@@ -390,7 +392,7 @@ export class DeviceManager {
     async resetPort(path) {
         const device = this.devices.get(path);
         if (!device) return;
-        device.port.close();
+        await device.close();
         this.devices.delete(path);
     }
 
@@ -398,7 +400,7 @@ export class DeviceManager {
         await Promise.allSettled(
             [...this.devices.values()].map(async (device) => {
                 await device.queue.onIdle();
-                device.port.close();
+                await device.close();
             })
         );
         this.devices.clear();
