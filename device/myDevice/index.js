@@ -121,13 +121,13 @@ async function multi_receive(self, resolve, reject, command, expected) {
     }
 }
 
-async function ack_call(self, resolve, reject, cmd) {
+async function ack_call(self, resolve, reject, cmd, timeoutMs = 5000) {
     try {
         self.port.once('error', err => reject(err));
         const timer = setTimeout(() => {
             self.port.removeAllListeners('error');
             reject('Device Timed out.');
-        }, 5000);
+        }, timeoutMs);
 
         self.port.write(cmd, (err) => {
             if (err) {
@@ -173,8 +173,13 @@ export class myDevice {
      * @param {typeof SerialPort} [SerialPortClass=SerialPort] - SerialPort class to use.
      *   Defaults to the production class. Pass `SerialPortMock` in tests and demos so
      *   the same code path can be exercised against a fake device.
+     * @param {object} [options]
+     * @param {() => void} [options.onDisconnect] - Called when the OS reports the device
+     *   has gone away (`'close'` event with `err.disconnected`). Lets the caller — usually
+     *   `DeviceManager` — react without reaching through to `this.port`. Not called when
+     *   the caller closes the port intentionally via `close()`.
      */
-    constructor(id, SerialPortClass = SerialPort) {
+    constructor(id, SerialPortClass = SerialPort, { onDisconnect } = {}) {
         this.path = id;
         // Sentinel that marks the end of a multi-line response. Compared
         // against the first segment of each incoming line in `multi_receive`.
@@ -188,6 +193,24 @@ export class myDevice {
         );
         this.queue = new PQueue({ concurrency: 1 });
         this.port.pipe(this.parser);
+        this.port.on('close', (err) => {
+            // Filter for the `disconnected` flag — 'close' also fires when the
+            // caller invokes close() on purpose, and that's not what subscribers
+            // are asking about.
+            if (err?.disconnected && onDisconnect) onDisconnect();
+        });
+    }
+
+    /**
+     * Releases the underlying serial port. Resolves immediately if the port is
+     * already closed, so it's safe to call at any time. Returning a promise lets
+     * lifecycle managers await the close before reusing or replacing the path.
+     */
+    close() {
+        return new Promise((resolve, reject) => {
+            if (!this.port.isOpen) return resolve();
+            this.port.close((err) => err ? reject(err) : resolve());
+        });
     }
 
     ledOn() {
@@ -237,5 +260,25 @@ export class myDevice {
     async updateParam(param, value) {
         await this.setParam(param, value);
         return this.saveParams();
+    }
+
+    // Cheap liveness check. Resolves to true if the device answers a
+    // !GET,FW_VERSION within 1s, false otherwise. Goes through the queue
+    // like any other command so it can't race with an in-flight request.
+    ping() {
+        const cmd = Buffer.from('!GET,FW_VERSION\r', 'ascii');
+        return this.queue.add(() => new Promise((resolve, reject) => {
+            ack_call(this, resolve, reject, cmd, 1000);
+        })).then(() => true, () => false);
+    }
+
+    // Snapshot of the parameters worth surfacing to a UI. Each fetch goes
+    // through the per-device queue, so the calls run sequentially against
+    // this device but pollers for other devices run in parallel.
+    async poll() {
+        return {
+            serialNumber: await this.getParam('SERIAL_NUMBER'),
+            ledDrive: await this.getParam('LED_DRIVE'),
+        };
     }
 }

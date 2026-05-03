@@ -118,6 +118,19 @@ class myDevice {
  
 The Baud Rate is the agreed upon speed for communications with our device. The delimiter '\r' is a carriage return character often denoted \<CR>, and for our example only ASCII encoded characters will be passed to/from our device. Messages will be parsed from the device after the parser recognizes that carriage return. We also ensure that only one command can be processed at a time with our promise queue by specifying a concurrency of 1.
 
+Since we open the port in the constructor, we should also expose a way to close it. We'll add a `close()` method that promisifies serialport's callback-style `close`, and resolves immediately if the port is already closed so it's safe to call at any time.
+
+```javascript
+close() {
+    return new Promise((resolve, reject) => {
+        if (!this.port.isOpen) return resolve();
+        this.port.close((err) => err ? reject(err) : resolve());
+    });
+}
+```
+
+Returning a promise lets callers await the close before reusing or replacing the path — that becomes important in Part 2 when a `DeviceManager` evicts a device from its map.
+
 We'll assume our example device accepts and sends the following command structure:
 
 `![CMD],param1,param2,...;<CR>`
