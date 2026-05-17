@@ -8,7 +8,7 @@
  * How it works:
  *
  *   1. We register a fake path with `SerialPortMock.binding.createPort`.
- *      The path is just an opaque string — real hardware would use e.g.
+ *      The path is just an opaque string. Real hardware would use e.g.
  *      `COM15` on Windows or `/dev/ttyUSB0` on Linux, but for the mock it's
  *      any unique identifier.
  *
@@ -17,7 +17,7 @@
  *      constructor argument. `myDevice` opens its own port internally; the
  *      subclass's constructor attaches fake-firmware behaviour to that
  *      port as soon as it opens. This is why `myDevice` takes the
- *      `SerialPortClass` parameter — same code path runs against real and
+ *      `SerialPortClass` parameter: the same code path runs against real and
  *      fake hardware.
  *
  *   3. We call methods on the device and print what comes back.
@@ -40,7 +40,7 @@ const waitOpen = (port) => new Promise((resolve, reject) => {
 // Register the fake path with the mock binding before anyone tries to open it.
 SerialPortMock.binding.createPort(DEVICE_PATH);
 
-// myDevice opens a FakeFirmwarePort internally — the subclass attaches the
+// myDevice opens a FakeFirmwarePort internally; the subclass attaches the
 // fake-firmware handler to the binding as soon as it opens.
 const device = new myDevice(DEVICE_PATH, FakeFirmwarePort);
 
@@ -69,7 +69,7 @@ try {
     ]);
     const elapsed = Date.now() - start;
     results.forEach((r, i) => log(`batch[${i}]`, r));
-    console.log(`  (${results.length} commands in ${elapsed}ms — queue held concurrency=1)`);
+    console.log(`  (${results.length} commands in ${elapsed}ms, queue held concurrency=1)`);
 
     console.log('\n[3] set + save (non-volatile memory workflow)');
     log('setParam("LED_DRIVE", "200")', await device.setParam('LED_DRIVE', '200'));
@@ -81,7 +81,7 @@ try {
     console.log('\n[4] validation (bad param should reject locally)');
     try {
         await device.setParam('LED_DRIVE', '999');
-        console.log('  expected rejection but got a value — validator bug?');
+        console.log('  expected rejection but got a value. validator bug?');
     } catch (err) {
         log('setParam rejected with', err);
     }
@@ -89,7 +89,7 @@ try {
     console.log('\n[5] unknown parameter (device should !NACK)');
     try {
         await device.getParam('NOT_A_REAL_PARAM');
-        console.log('  expected rejection but got a value — fake firmware bug?');
+        console.log('  expected rejection but got a value. fake firmware bug?');
     } catch (err) {
         log('getParam rejected with', err);
     }
@@ -124,8 +124,8 @@ try {
     await manager.update();
     log('manager.getDevices()', JSON.stringify(manager.getDevices()));
 
-    // myDevice kicks off open() in its constructor but doesn't await it —
-    // wait for both ports before issuing commands.
+    // myDevice kicks off open() in its constructor but doesn't await it.
+    // Wait for both ports before issuing commands.
     await Promise.all(manager.getDevices().map(path => waitOpen(manager.getDevice(path).port)));
 
     console.log('\n[7] look up each device and call methods on it directly');
@@ -152,7 +152,7 @@ try {
     console.log(`  (fired 4 commands in parallel, finished in ${elapsed}ms)`);
 
     console.log('\n[9] disconnect + rediscovery');
-    // The mock binding has no removePort — reset() and re-register to simulate
+    // The mock binding has no removePort; reset() and re-register to simulate
     // mock-a being unplugged while mock-b stays on.
     SerialPortMock.binding.reset();
     SerialPortMock.binding.createPort('/dev/mock-b', { vendorId: myDevice.VID, productId: myDevice.PID });

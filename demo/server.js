@@ -1,22 +1,22 @@
 /**
  * Part 3 demo: polling loop + Server-Sent Events feed of device state.
  *
- * Run with `npm run server` and open http://localhost:3000 — the page
+ * Run with `npm run server` and open http://localhost:3050. The page
  * subscribes to /events and renders a live table of every device the
  * DeviceManager currently knows about, updated every poll tick.
  *
  * What this exercises:
  *
- *   1. setAsyncInterval — two recurring loops (enumeration + polling) that
+ *   1. setAsyncInterval: two recurring loops (enumeration + polling) that
  *      can never overlap themselves, even if a tick takes longer than the
  *      interval.
  *
- *   2. Liveness check — every poll tick we ping each known device. If the
+ *   2. Liveness check: every poll tick we ping each known device. If the
  *      device fails to answer within the ping timeout we treat the port as
  *      dead and let the next enumeration tick decide whether to bring it
  *      back. This is what the Part 2 forward-reference promised.
  *
- *   3. Server-Sent Events — one-way push from server to browser. We don't
+ *   3. Server-Sent Events: one-way push from server to browser. We don't
  *      need a WebSocket for this; the device is the source of truth and the
  *      page only reads.
  *
@@ -88,7 +88,7 @@ const enumeration = setAsyncInterval(async () => {
     const before = manager.getDevices();
     // Drop expired cooldown entries before passing the filter to update().
     // Anything still in the map is a path we want manager.update() to treat
-    // as unplugged for this tick — that's how we suppress the ghost-port
+    // as unplugged for this tick. That's how we suppress the ghost-port
     // re-add loop without DeviceManager having to know about liveness.
     const now = Date.now();
     for (const [path, until] of lostUntil) {
@@ -126,11 +126,11 @@ const polling = setAsyncInterval(async () => {
 
 // --- demo flair: flip mock-a unresponsive at 8s, restore at 18s -------------
 setTimeout(() => {
-    console.log('flipping /dev/mock-a unresponsive — liveness check should drop it');
+    console.log('flipping /dev/mock-a unresponsive. liveness check should drop it');
     setFakeDeviceUnresponsive('/dev/mock-a', true);
 }, 8000);
 setTimeout(() => {
-    console.log('restoring /dev/mock-a — next enumeration tick should re-add it');
+    console.log('restoring /dev/mock-a. next enumeration tick should re-add it');
     setFakeDeviceUnresponsive('/dev/mock-a', false);
 }, 18000);
 

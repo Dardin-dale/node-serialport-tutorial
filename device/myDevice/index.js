@@ -40,8 +40,8 @@ function validate_checksum(msg, checksum) {
 /**
  * Sends a command and reads multiple data lines back until the device
  * emits its idle sentinel (`self.idle`). Use this for commands whose
- * response spans more than one line — e.g. log dumps, bulk data exports,
- * streamed readings.
+ * response spans more than one line (e.g. log dumps, bulk data exports,
+ * streamed readings).
  *
  * Differs from `ack_call` in three important ways:
  *   1. Uses `.on('data', ...)` not `.once('data', ...)`, so we can
@@ -101,7 +101,7 @@ async function multi_receive(self, resolve, reject, command, expected) {
                 return;
             }
 
-            // Skip bare acknowledgements — data lines are what we want.
+            // Skip bare acknowledgements. Data lines are what we want.
             if (info[0] === '!ACK') return;
 
             // Collect lines whose header matches what the caller asked for.
@@ -175,8 +175,8 @@ export class myDevice {
      *   the same code path can be exercised against a fake device.
      * @param {object} [options]
      * @param {() => void} [options.onDisconnect] - Called when the OS reports the device
-     *   has gone away (`'close'` event with `err.disconnected`). Lets the caller — usually
-     *   `DeviceManager` — react without reaching through to `this.port`. Not called when
+     *   has gone away (`'close'` event with `err.disconnected`). Lets the caller (usually
+     *   `DeviceManager`) react without reaching through to `this.port`. Not called when
      *   the caller closes the port intentionally via `close()`.
      */
     constructor(id, SerialPortClass = SerialPort, { onDisconnect } = {}) {
@@ -194,7 +194,7 @@ export class myDevice {
         this.queue = new PQueue({ concurrency: 1 });
         this.port.pipe(this.parser);
         this.port.on('close', (err) => {
-            // Filter for the `disconnected` flag — 'close' also fires when the
+            // Filter for the `disconnected` flag. 'close' also fires when the
             // caller invokes close() on purpose, and that's not what subscribers
             // are asking about.
             if (err?.disconnected && onDisconnect) onDisconnect();

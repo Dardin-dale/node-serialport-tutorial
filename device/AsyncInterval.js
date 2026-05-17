@@ -1,7 +1,7 @@
 /**
  * Like `setInterval`, but waits for the previous tick to settle before
  * scheduling the next one. The interval is the gap *between* ticks, not the
- * fixed wall-clock period — if a tick takes longer than `intervalMs`, the
+ * fixed wall-clock period. If a tick takes longer than `intervalMs`, the
  * next tick fires as soon as the previous resolves rather than piling up.
  *
  * Why not setInterval?

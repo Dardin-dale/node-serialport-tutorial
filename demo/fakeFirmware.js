@@ -8,8 +8,7 @@
  *     Device: !ACK,CMD,VALUE;CHECKSUM\r
  *
  * The checksum is computed with the same IBM CRC-16 algorithm myDevice uses,
- * so the client's `validate_checksum` path actually runs end-to-end — this
- * demo exercises the real code, not a shortcut.
+ * so the client's `validate_checksum` path actually runs end-to-end.
  *
  * Supported commands:
  *   !LED,0 / !LED,1          → acknowledged, toggles state.ledOn
@@ -22,12 +21,12 @@
  * Usage: pass `FakeFirmwarePort` as the SerialPortClass argument to
  * myDevice's constructor. The subclass auto-attaches the firmware handler
  * to its own binding during `open`, so the same code path that runs in
- * production runs in the demo — just against a fake port.
+ * production runs in the demo, just against a fake port.
  */
 
 import { SerialPortMock } from 'serialport';
 
-// IBM CRC-16 — must match device/myDevice/index.js. In a real product,
+// IBM CRC-16. Must match device/myDevice/index.js. In a real product,
 // the microcontroller firmware has its own C implementation of the same
 // algorithm; the host and device just agree on the bytes.
 function computeCRC16MSB(b, crc) {
@@ -57,7 +56,7 @@ function buildResponse(body) {
     return `${body};${checksumFor(body)}\r`;
 }
 
-// Device state — as if this were firmware running on a microcontroller.
+// Device state, as if this were firmware running on a microcontroller.
 // Per-path so a demo with several fake devices can give each its own
 // serial number, LED drive, etc.
 function makeDefaultState() {
@@ -97,7 +96,7 @@ export function setFakeDeviceState(path, overrides = {}) {
 
 /**
  * Toggle whether a fake device responds to commands. Useful for demoing
- * the polling-loop liveness check — flip a device unresponsive and watch
+ * the polling-loop liveness check. Flip a device unresponsive and watch
  * the server log a timeout, drop it, and re-enumerate.
  */
 export function setFakeDeviceUnresponsive(path, unresponsive = true) {
@@ -165,7 +164,7 @@ export function attachFakeFirmware(port, options = {}) {
         const result = await originalWrite(buffer);
         const cmdStr = buffer.toString('ascii').replace(/\r$/, '').trim();
         // When `state.unresponsive` is true we swallow the write and never
-        // emit a reply — the host-side timeout is what surfaces the failure.
+        // emit a reply. The host-side timeout is what surfaces the failure.
         if (cmdStr.length > 0 && !state.unresponsive) {
             const response = handleCommand(state, cmdStr);
             setTimeout(() => {
