@@ -95,6 +95,16 @@ export function setFakeDeviceState(path, overrides = {}) {
     });
 }
 
+/**
+ * Toggle whether a fake device responds to commands. Useful for demoing
+ * the polling-loop liveness check — flip a device unresponsive and watch
+ * the server log a timeout, drop it, and re-enumerate.
+ */
+export function setFakeDeviceUnresponsive(path, unresponsive = true) {
+    const state = getOrInitState(path);
+    state.unresponsive = unresponsive;
+}
+
 function handleCommand(state, cmdStr) {
     if (!cmdStr.startsWith('!')) {
         return buildResponse('!NACK');
@@ -154,7 +164,9 @@ export function attachFakeFirmware(port, options = {}) {
     mock.write = async function patchedWrite(buffer) {
         const result = await originalWrite(buffer);
         const cmdStr = buffer.toString('ascii').replace(/\r$/, '').trim();
-        if (cmdStr.length > 0) {
+        // When `state.unresponsive` is true we swallow the write and never
+        // emit a reply — the host-side timeout is what surfaces the failure.
+        if (cmdStr.length > 0 && !state.unresponsive) {
             const response = handleCommand(state, cmdStr);
             setTimeout(() => {
                 mock.emitData(Buffer.from(response, 'ascii'));

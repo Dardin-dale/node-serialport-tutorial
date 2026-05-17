@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>node-serialport-tutorial — Part 3</title>
+    <style>
+        body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; color: #222; }
+        h1 { font-size: 1.4rem; margin-bottom: 0.25rem; }
+        p.sub { color: #666; margin-top: 0; }
+        table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+        th, td { padding: 0.5rem 0.75rem; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #fafafa; font-weight: 600; }
+        tr.stale td { color: #aaa; }
+        .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; }
+        .pill.live { background: #e6f4ea; color: #137333; }
+        .pill.lost { background: #fce8e6; color: #a50e0e; }
+        #log { font-family: ui-monospace, monospace; font-size: 0.8rem; color: #555; margin-top: 1.5rem; max-height: 12rem; overflow-y: auto; padding: 0.5rem; background: #fafafa; border: 1px solid #eee; }
+    </style>
+</head>
+<body>
+    <h1>Devices</h1>
+    <p class="sub">Live state pushed from the polling loop via Server-Sent Events.</p>
+    <table>
+        <thead>
+            <tr><th>Path</th><th>Status</th><th>Serial #</th><th>LED Drive</th><th>Last update</th></tr>
+        </thead>
+        <tbody id="rows"><tr><td colspan="5" style="color: #aaa;">waiting for first event…</td></tr></tbody>
+    </table>
+    <div id="log"></div>
+
+    <script>
+        const rowsEl = document.getElementById('rows');
+        const logEl = document.getElementById('log');
+        const devices = new Map(); // path -> { status, serialNumber, ledDrive, lastUpdate }
+
+        function log(msg) {
+            const line = document.createElement('div');
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logEl.prepend(line);
+        }
+
+        function render() {
+            if (devices.size === 0) {
+                rowsEl.innerHTML = '<tr><td colspan="5" style="color: #aaa;">no devices</td></tr>';
+                return;
+            }
+            const fragments = [];
+            for (const [path, d] of devices) {
+                const stale = d.status === 'lost';
+                const pill = stale
+                    ? '<span class="pill lost">lost</span>'
+                    : '<span class="pill live">live</span>';
+                fragments.push(
+                    `<tr${stale ? ' class="stale"' : ''}>` +
+                    `<td>${path}</td>` +
+                    `<td>${pill}</td>` +
+                    `<td>${d.serialNumber ?? '—'}</td>` +
+                    `<td>${d.ledDrive ?? '—'}</td>` +
+                    `<td>${d.lastUpdate ?? '—'}</td>` +
+                    `</tr>`
+                );
+            }
+            rowsEl.innerHTML = fragments.join('');
+        }
+
+        const evt = new EventSource('/events');
+
+        evt.addEventListener('devices', (e) => {
+            const paths = JSON.parse(e.data);
+            log(`enumerated: ${paths.length === 0 ? '(none)' : paths.join(', ')}`);
+            // Drop devices the manager no longer sees.
+            for (const path of [...devices.keys()]) {
+                if (!paths.includes(path)) devices.delete(path);
+            }
+            for (const path of paths) {
+                if (!devices.has(path)) devices.set(path, { status: 'live' });
+            }
+            render();
+        });
+
+        evt.addEventListener('device-updated', (e) => {
+            const { path, serialNumber, ledDrive } = JSON.parse(e.data);
+            devices.set(path, {
+                status: 'live',
+                serialNumber,
+                ledDrive,
+                lastUpdate: new Date().toLocaleTimeString(),
+            });
+            render();
+        });
+
+        evt.addEventListener('device-lost', (e) => {
+            const { path } = JSON.parse(e.data);
+            log(`liveness check failed for ${path}`);
+            const existing = devices.get(path);
+            if (existing) {
+                existing.status = 'lost';
+                devices.set(path, existing);
+                render();
+            }
+        });
+
+        evt.onerror = () => log('SSE connection dropped — browser will retry');
+    </script>
+</body>
+</html>

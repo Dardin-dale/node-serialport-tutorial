@@ -5,9 +5,11 @@
   "type": "module",
   "main": "device/myDevice/index.js",
   "scripts": {
-    "demo": "node demo/index.js"
+    "demo": "node demo/index.js",
+    "server": "node demo/server.js"
   },
   "dependencies": {
+    "express": "^4.22.1",
     "p-queue": "^8.1.0",
     "serialport": "^13.0.0"
   },
