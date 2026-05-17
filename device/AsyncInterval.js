@@ -13,19 +13,27 @@
  *
  * @param {() => Promise<void>} fn - Async function to run each tick.
  * @param {number} intervalMs - Gap between ticks in milliseconds.
- * @returns {{ cancel: () => void }} Handle whose `cancel()` stops further ticks.
+ * @returns {{ cancel: () => Promise<void> }} Handle whose `cancel()` stops further
+ *   ticks and resolves once any in-flight tick has finished. Awaiting cancel()
+ *   before closing ports is what keeps `manager.shutdown()` from racing a
+ *   mid-flight write.
  */
 export function setAsyncInterval(fn, intervalMs) {
     let cancelled = false;
     let timer = null;
+    let currentTick = null;
 
     const tick = async () => {
         if (cancelled) return;
-        try {
-            await fn();
-        } catch (err) {
-            console.error('setAsyncInterval tick failed:', err);
-        }
+        currentTick = (async () => {
+            try {
+                await fn();
+            } catch (err) {
+                console.error('setAsyncInterval tick failed:', err);
+            }
+        })();
+        await currentTick;
+        currentTick = null;
         if (cancelled) return;
         timer = setTimeout(tick, intervalMs);
     };
@@ -33,9 +41,10 @@ export function setAsyncInterval(fn, intervalMs) {
     timer = setTimeout(tick, intervalMs);
 
     return {
-        cancel() {
+        async cancel() {
             cancelled = true;
             if (timer) clearTimeout(timer);
+            if (currentTick) await currentTick;
         },
     };
 }

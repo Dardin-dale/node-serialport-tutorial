@@ -141,8 +141,7 @@ const server = app.listen(PORT, () => {
 
 async function shutdown() {
     console.log('\nshutting down...');
-    enumeration.cancel();
-    polling.cancel();
+    await Promise.all([enumeration.cancel(), polling.cancel()]);
     await manager.shutdown();
     server.close();
     process.exit(0);

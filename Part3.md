@@ -133,20 +133,31 @@ The fix is to wait for each tick to finish before scheduling the next one. There
 export function setAsyncInterval(fn, intervalMs) {
     let cancelled = false;
     let timer = null;
+    let currentTick = null;
 
     const tick = async () => {
         if (cancelled) return;
-        try {
-            await fn();
-        } catch (err) {
-            console.error('setAsyncInterval tick failed:', err);
-        }
+        currentTick = (async () => {
+            try {
+                await fn();
+            } catch (err) {
+                console.error('setAsyncInterval tick failed:', err);
+            }
+        })();
+        await currentTick;
+        currentTick = null;
         if (cancelled) return;
         timer = setTimeout(tick, intervalMs);
     };
 
     timer = setTimeout(tick, intervalMs);
-    return { cancel() { cancelled = true; if (timer) clearTimeout(timer); } };
+    return {
+        async cancel() {
+            cancelled = true;
+            if (timer) clearTimeout(timer);
+            if (currentTick) await currentTick;
+        },
+    };
 }
 ```
 
@@ -155,7 +166,7 @@ It's a recursive `setTimeout`. The next tick is scheduled only after `await fn()
 Worth flagging:
 
 - **Errors don't break the loop.** A tick that throws gets logged and the loop continues. If you don't catch, an uncaught rejection inside the `setTimeout` callback will tear down the process.
-- **Cancellation is cooperative.** Calling `handle.cancel()` flips a flag and clears the pending timer. If the cancel happens while `fn` is mid-await, we still re-check the flag before scheduling the next tick.
+- **Cancellation is awaitable.** `cancel()` returns a Promise that resolves once any in-flight tick has finished. Awaiting it before closing ports keeps `manager.shutdown()` from racing a mid-flight write. If you skip the await, the port can close while a `device.poll()` is still mid-getParam and the write rejects with "Write canceled".
 
 ## Where the loop lives
 
