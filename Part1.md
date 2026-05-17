@@ -129,7 +129,7 @@ close() {
 }
 ```
 
-Returning a promise lets callers await the close before reusing or replacing the path — that becomes important in Part 2 when a `DeviceManager` evicts a device from its map.
+Returning a promise lets callers await the close before reusing or replacing the path. That becomes important in Part 2 when a `DeviceManager` evicts a device from its map.
 
 We'll assume our example device accepts and sends the following command structure:
 
@@ -388,4 +388,4 @@ Part 2 will cover creating a DeviceManager class to collect multiple devices and
 
 Happy Coding!
 
-[^1]: "Singleton" in this context is a smaller claim than it sounds. ES modules are already cached on import, so `export const manager = new DeviceManager(myDevice)` in a shared module gives you one instance for free — no `getInstance()` ceremony required. And the singleton is not what keeps commands safe; that job belongs to the per-device promise queue. See [Part 2 → Why not a singleton?](Part2.md#why-not-a-singleton) for the full breakdown.
+[^1]: "Singleton" in this context is a smaller claim than it sounds. ES modules are already cached on import, so `export const manager = new DeviceManager(myDevice)` in a shared module gives you one instance for free. No `getInstance()` ceremony required. The singleton is not what keeps commands safe; that job belongs to the per-device promise queue. See [Part 2](Part2.md#first-pass-a-map-and-an-update-method) for more.
