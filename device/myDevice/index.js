@@ -43,7 +43,7 @@ function validate_checksum(msg, checksum) {
  * response spans more than one line (e.g. log dumps, bulk data exports,
  * streamed readings).
  *
- * Differs from `ack_call` in three important ways:
+ * Differs from `ack_call`:
  *   1. Uses `.on('data', ...)` not `.once('data', ...)`, so we can
  *      accumulate multiple lines from the same listener.
  *   2. Explicitly calls `removeAllListeners('data')` at every exit path.
